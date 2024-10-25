@@ -1,0 +1,14 @@
+
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-gcc.exe -mthumb -mcpu=cortex-m3 -O0 -c -g -DSTM32F10X_MD -I ./CMSIS/device -I ./CMSIS/core -I ./SPL/inc -o main.o ./main.c
+
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-ld.exe -Tmem.ld -Tsections.ld  main.o  -o main.elf
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-size.exe  main.elf 
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-objcopy.exe -O ihex main.elf main.hex
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-objdump.exe -S ./main.elf
+
+
+
+
+asm для старта
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\bin\arm-none-eabi-gcc.exe -c -o init.o asm/init.s -mthumb -mcpu=cortex-m3 -g -Wall
+C:\Keil_v5\gcc-arm-none-eabi-4_9-win32\binarm-none-eabi-ld.exe -Tscript.ld -g  -o main.elf  main.o  init.o
