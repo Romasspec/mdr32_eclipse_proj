@@ -12,6 +12,7 @@ j1939msg_t CANmsg;
 uint16_t temper = 0;
 uint8_t temper_start = 0;
 
+
 void (*task_ptr)(void);
 void (*task_1ms_ptr)(void);
 void (*task_5ms_ptr)(void);
@@ -59,6 +60,7 @@ __initialize_bss (unsigned int* region_begin, unsigned int* region_end)
 
 int main (void)
 {
+	uint8_t serial_number[8];
 	__initialize_data(&_sidata, &_sdata, &_edata);
 	__initialize_bss(&__bss_start__, &__bss_end__);
 
@@ -72,16 +74,21 @@ int main (void)
 	task_5ms_ptr = &task_5ms_1;
 
 	//while (ds18b20_init(MODE_SKIP_ROM));
+	while (ds18b20_ReadRom_(serial_number));
+	send_CAN(serial_number,8);
+
+	delay_ms(100);
+
 	ds18b20_init(MODE_SKIP_ROM);
 
 	while (1)
 	{
 		(*task_ptr)();
 
-//		if (temper_start) {
-//			temper_start = 0;
-//			temper = ds18b20_Tread();
-//		}
+		if (temper_start || !temper) {
+			temper_start = 0;
+			temper = ds18b20_Tread();
+		}
 	}
 }
 
@@ -141,7 +148,7 @@ void task_1ms_1(void)
 
 	task_1ms_ptr = &task_1ms_2;
 }
-extern uint8_t dt[8];
+//extern uint8_t dt[8];
 void task_1ms_2(void)
 {
 	static uint32_t time_task = 0;
@@ -156,7 +163,7 @@ void task_1ms_2(void)
 		CANmsg.pf 	= 0x01;
 		CANmsg.ps	= 0x00;
 		CANmsg.sa 	= 0x07;
-		CANmsg.len	= 8;
+		CANmsg.len	= 2;
 		CANmsg.data[0]	= ((uint8_t) temper) & 0xFF;
 		CANmsg.data[1]	= ((uint8_t) (temper >> 8)) & 0xFF;
 //		CANmsg.data[0] = dt[0];
@@ -175,7 +182,8 @@ void task_1ms_2(void)
 		TxMsg.Data[1]	= CANmsg.data_u32[1];
 		CAN_Transmit (MDR_CAN2, 0, &TxMsg);
 //		(ds18b20_Reset() != 0) ? (MDR_PORTB->RXTX |= PORT_Pin_6) : (MDR_PORTB->RXTX &=~PORT_Pin_6);
-		temper = ds18b20_Tread();
+//		temper = ds18b20_Tread();
+		temper_start = 1;
 	}
 
 	task_1ms_ptr = &task_1ms_1;
@@ -330,6 +338,30 @@ void can2_init(void)
 	CAN_FilterInit (MDR_CAN2, 1, &CAN_FilterInitStructure);
 	CAN_Receive (MDR_CAN2, 1, ENABLE);
 }
+
+void send_CAN(uint8_t *data, uint8_t lenght)
+{
+	uint8_t i;
+	CANmsg.p	= 7;
+	CANmsg.r	= 0;
+	CANmsg.dp	= 0;
+	CANmsg.pf 	= 0x01;
+	CANmsg.ps	= 0x00;
+	CANmsg.sa 	= 0x07;
+	CANmsg.len	= lenght;
+
+	for (i=0; i<lenght; i++) {
+		CANmsg.data[i] = data[i];
+	}
+
+	TxMsg.ID 		= CANmsg.idt;
+	TxMsg.DLC		= CANmsg.len;
+	TxMsg.IDE		= CAN_ID_EXT;
+	TxMsg.Data[0]	= CANmsg.data_u32[0];
+	TxMsg.Data[1]	= CANmsg.data_u32[1];
+	CAN_Transmit (MDR_CAN2, 0, &TxMsg);
+}
+
 
 void HardFault_Handler() {
 	while(1) blink(2);

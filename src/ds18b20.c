@@ -1,5 +1,6 @@
 #include "ds18b20.h"
 
+static const uint8_t s_numb[]={0x28, 0x0F, 0xF2, 0x6A, 0x00, 0x00, 0x00, 0x94};
 uint8_t dt[9];
 
 uint8_t ds18b20_Reset(void)
@@ -63,20 +64,19 @@ uint8_t ds18b20_Reset_(void)
 uint16_t ds18b20_Tread (void)
 {
 	uint16_t temp = 0;
-	uint8_t data, crc = 0;
-	uint8_t i,j;
 	static uint8_t state = MEASURE_TEMPER;
+//	MDR_PORTB->RXTX |= PORT_Pin_6;
 
 	switch (state) {
 		case MEASURE_TEMPER:
-			if(!ds18b20_MeasureTemperCmd(MODE_SKIP_ROM, 0)) {
+			if(!ds18b20_MeasureTemperCmd(MODE_MATCH_ROM, 0)) {
 				state = READ_STRATCPAD;
 			}
 
 			break;
 
 		case READ_STRATCPAD:
-			if (!ds18b20_ReadStratcpad(MODE_SKIP_ROM, dt, 0)) {
+			if (!ds18b20_ReadStratcpad_(MODE_MATCH_ROM, dt, 0)) {
 				//temp =  (dt[1] << 8) | dt[0];
 				//temp = ds18b20_Convert((uint16_t*) dt);
 				//state = MEASURE_TEMPER;
@@ -85,31 +85,29 @@ uint16_t ds18b20_Tread (void)
 			break;
 
 		case CRC:
-			for(i=0; i<9; i++) {
-				data = dt[i];
-				for(j=0; j<8; j++) {
-					if ((crc ^ data)&1) {
-						crc = (crc >> 1) ^ 0x8c;		// полином 0х31, но т.к. данные передаются младшим битом вперд тогда полином будет 0х8с
-					}
-					else {
-						crc = (crc >> 1);
-					}
-					data = data >> 1;
-				}
+//			for(i=0; i<9; i++) {
+//				data = dt[i];
+//				for(j=0; j<8; j++) {
+//					if ((crc ^ data)&1) {
+//						crc = (crc >> 1) ^ 0x8c;		// полином 0х31, но т.к. данные передаются младшим битом вперд тогда полином будет 0х8с
+//					}
+//					else {
+//						crc = (crc >> 1);
+//					}
+//					data = data >> 1;
+//				}
+//
+//			}
 
-			}
-
-			if (crc == 0) {
-				MDR_PORTB->RXTX ^= PORT_Pin_6;
+			if (calc_CRC(dt, 9) == 0) {
 //				*((uint16_t*) dt) = 0xFF5E;
-
 				temp = ds18b20_Convert((uint16_t*) dt);
 			}
 
 			state = MEASURE_TEMPER;
 			break;
 	}
-
+//	MDR_PORTB->RXTX &=~PORT_Pin_6;
 	return temp;
 
 //	if (ds18b20_Reset()) {
@@ -127,7 +125,7 @@ uint8_t ds18b20_ReadBit(void)
 	delayMicroseconds(2);
 	DS18b20_port->RXTX |= DS18b20_pin27;						//высокий уровень
 	delayMicroseconds(13);
-	bit = ((DS18b20_port->RXTX & DS18b20_pin27) ? 1 : 0);			//проверяем уровень
+	bit = ((DS18b20_port->RXTX & DS18b20_pin27) ? 1 : 0);		//проверяем уровень
 	delayMicroseconds(45);
 	return bit;
 }
@@ -175,14 +173,24 @@ uint8_t ds18b20_init(uint8_t mode)
 
 uint8_t ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum)
 {
-	if(ds18b20_Reset()) {
+	uint8_t i;
+	if(ds18b20_Reset_()) {
+		return 1;
+	}
+	MDR_PORTB->RXTX |= PORT_Pin_6;
+	if(mode == MODE_SKIP_ROM) {
+		ds18b20_WriteByte(SKIP_ROM);								//SKIP ROM
+	} else if (mode == MODE_MATCH_ROM) {
+		ds18b20_WriteByte(MATCH_ROM);
+
+		for(i=0; i<8; i++) {
+			ds18b20_WriteByte(*(s_numb+i));
+		}
+	} else {
 		return 1;
 	}
 
-	if(mode == MODE_SKIP_ROM) {
-	ds18b20_WriteByte(SKIP_ROM);								//SKIP ROM
-	}
-
+	MDR_PORTB->RXTX &=~PORT_Pin_6;
 	ds18b20_WriteByte(CONVERT_T);								//CONVERT T
 	return 0;
 }
@@ -190,12 +198,16 @@ uint8_t ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum)
 uint8_t ds18b20_ReadStratcpad(uint8_t mode, uint8_t *Data, uint8_t DevNum)
 {
 	uint8_t i;
-	if(ds18b20_Reset()) {
+	if(ds18b20_Reset_()) {
 		return 1;
 	}
 
 	if(mode == MODE_SKIP_ROM) {
 		ds18b20_WriteByte(SKIP_ROM);							//SKIP ROM
+	} else if (mode == MODE_MATCH_ROM) {
+		ds18b20_WriteByte(MATCH_ROM);
+	} else {
+		return 1;
 	}
 
 	ds18b20_WriteByte(READ_SCRATCHPAD);								//READ SCRATCHPAD
@@ -203,6 +215,39 @@ uint8_t ds18b20_ReadStratcpad(uint8_t mode, uint8_t *Data, uint8_t DevNum)
 		Data[i] = ds18b20_ReadByte();
 	}
 	return  0;
+}
+
+uint8_t ds18b20_ReadStratcpad_(uint8_t mode, uint8_t *Data, uint8_t DevNum)
+{
+	static uint8_t i = 0;
+	if(ds18b20_Reset_() && (!i)) {
+		return 1;
+	}
+
+	if((mode == MODE_SKIP_ROM) && (!i)) {
+		ds18b20_WriteByte(SKIP_ROM);							//SKIP ROM
+	} else if((mode == MODE_MATCH_ROM) && (!i)) {
+		ds18b20_WriteByte(MATCH_ROM);
+
+		for (i=0; i<8; i++) {
+			ds18b20_WriteByte(*(s_numb+i));
+		}
+		i=0;
+	} else if (!i) {
+		return 1;
+	}
+
+	if (!i) {
+		ds18b20_WriteByte(READ_SCRATCHPAD);						//READ SCRATCHPAD
+	}
+
+	if(i<9) {
+		Data[i++] = ds18b20_ReadByte();
+	} else {
+		i = 0;
+		return 0;
+	}
+	return  1;
 }
 
 uint16_t ds18b20_Convert(uint16_t *dt)
@@ -219,4 +264,42 @@ uint16_t ds18b20_Convert(uint16_t *dt)
 
 
 	return temp;
+}
+
+uint8_t calc_CRC (uint8_t * dt, uint8_t lenght)
+{
+	uint8_t i, j, data, crc = 0;
+	for(i=0; i<lenght; i++) {
+		data = dt[i];
+		for(j=0; j<8; j++) {
+			if ((crc ^ data)&1) {
+				crc = (crc >> 1) ^ 0x8c;		// полином 0х31, но т.к. данные передаются младшим битом вперд тогда полином будет 0х8с
+			}
+			else {
+				crc = (crc >> 1);
+			}
+			data = data >> 1;
+		}
+	}
+	return crc;
+}
+
+uint8_t ds18b20_ReadRom_(uint8_t *Data)
+{
+	static uint8_t i = 0;
+	if(ds18b20_Reset_() && (!i)) {
+		return 1;
+	}
+
+	if (!i) {
+		ds18b20_WriteByte(READ_ROM);						//READ LASERED ROM
+	}
+
+	if(i<8) {
+		Data[i++] = ds18b20_ReadByte();
+	} else {
+		i = 0;
+		return calc_CRC(Data,8);
+	}
+	return 1;
 }

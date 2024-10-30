@@ -66,7 +66,10 @@ void ds18b20_WriteByte(uint8_t dt);
 uint8_t ds18b20_init(uint8_t mode);
 uint8_t ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum);
 uint8_t ds18b20_ReadStratcpad(uint8_t mode, uint8_t *Data, uint8_t DevNum);
+uint8_t ds18b20_ReadStratcpad_(uint8_t mode, uint8_t *Data, uint8_t DevNum);
 uint16_t ds18b20_Convert(uint16_t *dt);
+uint8_t calc_CRC (uint8_t * dt, uint8_t lenght);
+uint8_t ds18b20_ReadRom_(uint8_t *Data);
 //--------------------------------------------------
 
 #endif /* DS18B20_H_ */

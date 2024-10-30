@@ -34,4 +34,6 @@ typedef struct
 
 }j1939msg_t;
 
+void send_CAN(uint8_t *data, uint8_t lenght);
+
 #endif
