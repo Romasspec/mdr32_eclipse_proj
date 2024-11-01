@@ -137,11 +137,14 @@
 						</toolChain>
 					</folderInfo>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.433015248.584250965" name="mem.ld" rcbsApplicability="disable" resourcePath="mem.ld" toolsToInvoke=""/>
+					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.433015248.1740520415" name="startup_MDR32F9Qx.S" rcbsApplicability="disable" resourcePath="test/startup_MDR32F9Qx.S" toolsToInvoke="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1159850953.896501999">
+						<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1159850953.896501999" name="GNU Arm Cross Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1159850953"/>
+					</fileInfo>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.433015248.51259254" name="sections.ld" rcbsApplicability="disable" resourcePath="sections.ld" toolsToInvoke=""/>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.433015248.539822009" name="script.ld" rcbsApplicability="disable" resourcePath="script.ld" toolsToInvoke=""/>
 					<fileInfo id="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.433015248.1772125246" name="MDR32F9Qx_rst_clk.h" rcbsApplicability="disable" resourcePath="SPL/inc/MDR32F9Qx_rst_clk.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/main_exp.c|asm/Sstartup_MDR32F9Qx.S|mem.ld|sections.ld|asm2/init.S" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="test/startup_MDR32F9Qx.S|src/main_exp.c|asm/Sstartup_MDR32F9Qx.S|mem.ld|sections.ld|asm2/init.S" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

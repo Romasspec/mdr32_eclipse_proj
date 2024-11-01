@@ -61,8 +61,8 @@ __initialize_bss (unsigned int* region_begin, unsigned int* region_end)
 int main (void)
 {
 	uint8_t serial_number[8];
-	__initialize_data(&_sidata, &_sdata, &_edata);
-	__initialize_bss(&__bss_start__, &__bss_end__);
+//	__initialize_data(&_sidata, &_sdata, &_edata);
+//	__initialize_bss(&__bss_start__, &__bss_end__);
 
 	rcc_init ();
 	gpio_init ();
