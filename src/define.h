@@ -7,6 +7,7 @@
 #include "MDR32F9Qx_can.h"
 #include "ds18b20.h"
 #include "time.h"
+#include "tm1637.h"
 
 #define PGN_DEV_RESET					((uint8_t) 0x3E)
 
@@ -35,5 +36,6 @@ typedef struct
 }j1939msg_t;
 
 void send_CAN(uint8_t *data, uint8_t lenght);
+void blink_reset (void);
 
 #endif

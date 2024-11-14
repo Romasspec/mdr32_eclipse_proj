@@ -13,7 +13,11 @@ Reset_Handler:
 	ldr r1, =_edata
 	ldr r2, =_sidata
 	movs r3, #0
-	b LoopCopyDataInit
+	bl LoopCopyDataInit
+	bl startLoopFillZerobss
+	bl    main
+
+	b blink_3
 
 CopyDataInit:
 	ldr r4, [r2, r3]
@@ -24,6 +28,11 @@ LoopCopyDataInit:
 	adds r4, r0, r3
 	cmp r4, r1
 	bcc CopyDataInit
+	bx lr
+
+	b blink_4
+
+startLoopFillZerobss:
 
 	ldr r2, =_sbss
 	ldr r4, =_ebss
@@ -37,8 +46,9 @@ FillZerobss:
 LoopFillZerobss:
 	cmp r2, r4
 	bcc FillZerobss
+	bx lr
 
-  b    main
+  b blink_5
 
     .section .text.Default_Handler,"ax",%progbits
 Default_Handler:

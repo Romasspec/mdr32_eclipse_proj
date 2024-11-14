@@ -207,6 +207,7 @@ void task_5ms_1(void)
 
 void task_5ms_2(void)
 {
+	uint8_t buf[4];
 	static uint32_t time_task = 0;
 	uint32_t current_time = micros();
 	if ((int32_t)(current_time-time_task) >= 0)
@@ -217,7 +218,36 @@ void task_5ms_2(void)
 //			MDR_PORTB->RXTX ^= PORT_Pin_6;
 //		}
 
+//		tm1637_send_byte(DIG1,digToHEX(11));
+//		tm1637_send_byte(DIG2,digToHEX(2));
+//		tm1637_send_byte(DIG3,digToHEX(5) | 0x80);
+//		tm1637_send_byte(DIG4,digToHEX(8));
 
+		buf[0] = (uint8_t) ((temper>>8) & 0x7F);
+		if (buf[0] > 99) {
+			buf[1] = digToHEX((buf[0] % 1000) / 100);
+			buf[2] = digToHEX((buf[0] % 100) / 10);
+			buf[3] = digToHEX((buf[0] % 10) / 1);
+		} else if (buf[0] > 9) {
+			buf[1] = digToHEX((buf[0] % 100) / 10);
+			buf[2] = digToHEX((buf[0] % 10) / 1) | 0x80;
+			buf[3] = digToHEX(((uint8_t)(temper & 0x00FF) % 100) / 10);
+		} else {
+			buf[1] = digToHEX((buf[0] % 1) % 10) | 0x80;
+			buf[2] = digToHEX(((uint8_t)(temper & 0x00FF) % 100) / 10);
+			buf[3] = digToHEX(((uint8_t)(temper & 0x00FF) % 10) / 1);
+		}
+
+
+		//buf[3] = digToHEX((uint8_t)(temper & 0x00FF) / 10);
+		if (temper & 0x8000) {
+			buf[0] = digToHEX (11);
+		} else {
+			buf[0] = digToHEX(10);
+		}
+
+		tm1637_send_buf(buf, 4);
+		tm1637_set_brightness(BRIGHTNESS1);
 	}
 
 
@@ -249,11 +279,11 @@ void rcc_init(void)
 	RST_CLK_PCLKcmd ( RST_CLK_PCLK_PORTC, 	ENABLE);
 	RST_CLK_PCLKcmd ( RST_CLK_PCLK_PORTD, 	ENABLE);
 	RST_CLK_PCLKcmd ( RST_CLK_PCLK_PORTE, 	ENABLE);
-	RST_CLK_PCLKcmd ( RST_CLK_PCLK_PORTF, 	ENABLE);
+//	RST_CLK_PCLKcmd ( RST_CLK_PCLK_PORTF, 	ENABLE);
 	RST_CLK_PCLKcmd ( RST_CLK_PCLK_EEPROM,	ENABLE);
-	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER1,	ENABLE);
-	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER2,	ENABLE);
-	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER3,	ENABLE);
+//	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER1,	ENABLE);
+//	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER2,	ENABLE);
+//	RST_CLK_PCLKcmd ( RST_CLK_PCLK_TIMER3,	ENABLE);
 	RST_CLK_PCLKcmd	( RST_CLK_PCLK_UART2, 	ENABLE);
 	RST_CLK_PCLKcmd	( RST_CLK_PCLK_ADC,	  	ENABLE);
 	RST_CLK_PCLKcmd (RST_CLK_PCLK_WWDG, 	ENABLE);
@@ -302,6 +332,17 @@ void gpio_init(void)
 	Port_Initstructure.PORT_PD 		= PORT_PD_OPEN;
 	PORT_Init (DS18b20_port, &Port_Initstructure);
 	DS18b20_port->RXTX |= DS18b20_pin27;
+
+	Port_Initstructure.PORT_Pin		= TM1637_CLK_PIN | TM1637_DIO_PIN;
+	Port_Initstructure.PORT_OE		= PORT_OE_OUT;
+	Port_Initstructure.PORT_FUNC	= PORT_FUNC_PORT;
+	Port_Initstructure.PORT_MODE	= PORT_MODE_DIGITAL;
+	Port_Initstructure.PORT_SPEED	= PORT_SPEED_MAXFAST;
+	Port_Initstructure.PORT_PD		= PORT_PD_OPEN;
+//	Port_Initstructure.PORT_PD 		= PORT_PD_DRIVER;
+//	Port_Initstructure.PORT_PULL_UP	= PORT_PULL_UP_ON;
+	PORT_Init (TM1637_PORT, &Port_Initstructure);
+	TM1637_PORT->RXTX |= TM1637_CLK_PIN | TM1637_DIO_PIN;
 }
 
 void can2_init(void)
@@ -365,6 +406,21 @@ void send_CAN(uint8_t *data, uint8_t lenght)
 
 void HardFault_Handler() {
 	while(1) blink(2);
+}
+
+void blink_3 (void)
+{
+	while(1) blink(3);
+}
+
+void blink_4 (void)
+{
+	while(1) blink(4);
+}
+
+void blink_5 (void)
+{
+	while(1) blink(5);
 }
 
 void delay(void)
